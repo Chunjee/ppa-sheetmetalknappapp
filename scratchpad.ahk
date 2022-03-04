@@ -9,6 +9,7 @@ SetBatchLines, -1
 A := new biga() ; requires https://www.npmjs.com/package/biga.ahk
 
 ; variables
+global attempts := 0
 inventory := [{tag: "SM1722", weight: 3220, width: 32}
 			, {tag: "SM1723", weight: 3260, width: 32}
 			, {tag: "SM1724", weight: 3260, width: 32}
@@ -28,12 +29,13 @@ inventory := [{tag: "SM1722", weight: 3220, width: 32}
 
 order := [{width: 1.938, weight: 2300}
 		, {width: 2.563, weight: 1400}
-		, {width: 3.438, weight: 500}
-		, {width: 3.500, weight: 1500}
-		, {width: 3.625, weight: 1500}
-		, {width: 4.313, weight: 500}
-		, {width: 4.875, weight: 2200}
-		, {width: 5.063, weight: 500}]
+		, {width: 3.438, weight: 500}]
+		; , {width: 3.500, weight: 1500}
+		; , {width: 3.625, weight: 1500}
+		; , {width: 4.313, weight: 500}
+		; , {width: 4.875, weight: 2200}
+		; , {width: 5.063, weight: 500}]
+
 
 ; order := [{width: 1.938, weight: 2300}
 ; 		, {width: 2.563, weight: 1400}
@@ -43,11 +45,16 @@ order := [{width: 1.938, weight: 2300}
 ; /--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\
 ; MAIN
 ; \--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/
+print("Started at " A_Hour ":" A_MM " (" A_YYYY "-" A_MM "-" A_DD ")")
+setTimer, fn_printAttempts, 10000
 fn_knappShuffle(inventory, order)
 return
 
 
-
+fn_printAttempts()
+{
+	print(A_Hour ":" A_MM "  -  " attempts)
+}
 
 ; /--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\
 ; functions
@@ -57,8 +64,8 @@ fn_knappShuffle(param_inventory, param_order, param_maxRolls := 5)
 {
 	allSets := []
 	while (workingSetFound != true) {
-		count := A_Index
 		loop, % param_maxRolls {
+			attempts++
 			; create random set of inventory
 			set := biga.sampleSize(param_inventory, A_Index)
 			; gather all the different cuts in the order
@@ -75,13 +82,15 @@ fn_knappShuffle(param_inventory, param_order, param_maxRolls := 5)
 			combinedResult := biga.cloneDeep(result)
 			combinedResult.outputs := fn_combinesimiliarWidths(result.outputs)
 			; check if set meets all requirements
-			; print(biga.sumBy(combinedResult.totals, "scrapYield"))
 			if (fn_checkIfOrderSatisfied(combinedResult, param_order, 5) == true && biga.sumBy(combinedResult.totals, "scrapYield") <= 5) {
+				; print solution to console
 				print("FINAL:`n`n")
 				print(combinedResult)
 				print(bladeArrangement)
 				print(set)
 				print(biga.sumBy(combinedResult.totals, "scrapYield"))
+				; turn timer off
+				setTimer, fn_printAttempts, Off
 				break 2
 			}
 		}

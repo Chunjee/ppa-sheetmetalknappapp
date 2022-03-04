@@ -1,7 +1,7 @@
 {
 	"name": "ppa-sheetmetalknappapp",
 	"version": "0.5.0",
-	"description": "Assists with the Wordle guesses",
+	"description": "A general pourpose knappsack problem solving app for cutting sheetmetal rolls",
 	"main": "app.ahk",
 	"repository": {
 		"type": "git",
