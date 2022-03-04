@@ -86,7 +86,7 @@ fn_knappShuffle(param_inventory, param_order, param_maxRolls := 5)
 				; print solution to console
 				print("FINAL:`n`n")
 				print(combinedResult)
-				print(bladeArrangement)
+				print(biga.sortBy(bladeArrangement))
 				print(set)
 				print(biga.sumBy(combinedResult.totals, "scrapYield"))
 				; turn timer off
