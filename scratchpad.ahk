@@ -8,8 +8,14 @@ SetBatchLines, -1
 
 A := new biga() ; requires https://www.npmjs.com/package/biga.ahk
 
+; global variables
+global attempts, sampleScrap
+global settings := {}
+settings.maxScrapPercent := 7
+settings.minMachineEfficiency := .05
+settings.minCutTotal := .9
+
 ; variables
-global attempts := 0
 inventory := [{tag: "SM1722", weight: 3220, width: 32}
 			, {tag: "SM1723", weight: 3260, width: 32}
 			, {tag: "SM1724", weight: 3260, width: 32}
@@ -27,9 +33,9 @@ inventory := [{tag: "SM1722", weight: 3220, width: 32}
 			, {tag: "SM1736", weight: 3180, width: 32}
 			, {tag: "SM1737", weight: 3240, width: 32}]
 
-order := [{width: 1.938, weight: 2300}
-		, {width: 2.563, weight: 1400}
-		, {width: 3.438, weight: 500}]
+order := [{width: 0.688, weight: 4000}]
+		; , {width: 2.563, weight: 1400}
+		; , {width: 3.438, weight: 500}]
 		; , {width: 3.500, weight: 1500}
 		; , {width: 3.625, weight: 1500}
 		; , {width: 4.313, weight: 500}
@@ -45,15 +51,15 @@ order := [{width: 1.938, weight: 2300}
 ; /--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\
 ; MAIN
 ; \--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/
-print("Started at " A_Hour ":" A_MM " (" A_YYYY "-" A_MM "-" A_DD ")")
-setTimer, fn_printAttempts, 10000
+print("Started at " A_Hour ":" A_MM " (" A_YYYY "-" A_MM "-" A_DD ")   ")
+setTimer, fn_printAttempts, 1000
 fn_knappShuffle(inventory, order)
 return
 
 
 fn_printAttempts()
 {
-	print(A_Hour ":" A_MM "  -  " attempts)
+	print(A_Hour ":" A_MM "  -  " attempts  " " sampleScrap "%")
 }
 
 ; /--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\
@@ -81,17 +87,21 @@ fn_knappShuffle(param_inventory, param_order, param_maxRolls := 5)
 			; print(result)
 			combinedResult := biga.cloneDeep(result)
 			combinedResult.outputs := fn_combinesimiliarWidths(result.outputs)
-			; check if set meets all requirements
-			if (fn_checkIfOrderSatisfied(combinedResult, param_order, 5) == true && biga.sumBy(combinedResult.totals, "scrapYield") <= 5) {
-				; print solution to console
-				print("FINAL:`n`n")
-				print(combinedResult)
-				print(biga.sortBy(bladeArrangement))
-				print(set)
-				print(biga.sumBy(combinedResult.totals, "scrapYield"))
-				; turn timer off
-				setTimer, fn_printAttempts, Off
-				break 2
+			sampleScrap := biga.sumBy(combinedResult.totals, "scrapYield")
+			; check if under max allowable scrap percent
+			if (biga.sumBy(combinedResult.totals, "scrapYield") <= settings.maxScrapPercent) {
+				; check if set meets all order requirements
+				if (fn_checkIfOrderSatisfied(combinedResult, param_order, 5) == true) {
+					; print solution to console
+					print("FINAL:`n`n")
+					print(combinedResult)
+					print(biga.sortBy(bladeArrangement))
+					print(set)
+					print(biga.sumBy(combinedResult.totals, "scrapYield"))
+					; turn timer off
+					setTimer, fn_printAttempts, Off
+					break 2
+				}
 			}
 		}
 	}
@@ -140,13 +150,15 @@ fn_cutShuffle(param_cuts, param_maxWidth, param_rollnumbers:=1)
 	minWidth := param_maxWidth - .07
 	loop, % param_rollnumbers {
 		totalWidth := 0
-		while (biga.sumBy(outputCuts) < param_maxWidth - 0.8) {
-			outputCuts.push(biga.sample(uniqCuts))
-			if (biga.sumBy(outputCuts) > param_maxWidth - 0.5) {
+		possibleCut := biga.sample(uniqCuts)
+		while ((biga.sumBy(outputCuts) + possibleCut) < param_maxWidth - settings.minCutTotal) {
+			outputCuts.push(possibleCut)
+			if (biga.sumBy(outputCuts) > param_maxWidth - settings.minMachineEfficiency) {
 				outputCuts := []
 			}
 		}
 	}
+	print(biga.sumBy(outputCuts))
 	return outputCuts
 }
 
