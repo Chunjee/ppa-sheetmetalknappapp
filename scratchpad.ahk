@@ -11,9 +11,10 @@ A := new biga() ; requires https://www.npmjs.com/package/biga.ahk
 ; global variables
 global attempts, sampleScrap
 global settings := {}
-settings.maxScrapPercent := 7
+settings.maxScrapPercent := 8
+settings.maxRolls := 2
 settings.minMachineEfficiency := .05
-settings.minCutTotal := .9
+settings.minCutTotal := .09
 
 ; variables
 inventory := [{tag: "SM1722", weight: 3220, width: 32}
@@ -33,33 +34,33 @@ inventory := [{tag: "SM1722", weight: 3220, width: 32}
 			, {tag: "SM1736", weight: 3180, width: 32}
 			, {tag: "SM1737", weight: 3240, width: 32}]
 
-order := [{width: 0.688, weight: 4000}]
-		; , {width: 2.563, weight: 1400}
-		; , {width: 3.438, weight: 500}]
-		; , {width: 3.500, weight: 1500}
-		; , {width: 3.625, weight: 1500}
-		; , {width: 4.313, weight: 500}
-		; , {width: 4.875, weight: 2200}
-		; , {width: 5.063, weight: 500}]
+order := [{width: 0.688, weight: 4000}
+		, {width: 2.563, weight: 1400}
+		, {width: 3.438, weight: 500}
+		, {width: 3.500, weight: 1500}
+		, {width: 3.625, weight: 1500}
+		, {width: 4.313, weight: 500}
+		, {width: 4.875, weight: 2200}
+		, {width: 5.063, weight: 500}]
 
 
-; order := [{width: 1.938, weight: 2300}
-; 		, {width: 2.563, weight: 1400}
-; 		, {width: 3.438, weight: 500}
-; 		, {width: 3.500, weight: 1500}]
+order := [{width: 1.500, weight: 1300}
+		, {width: 0.563, weight: 1400}
+		, {width: 1.438, weight: 500}
+		, {width: 1.900, weight: 1500}]
 
 ; /--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\
 ; MAIN
 ; \--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/
 print("Started at " A_Hour ":" A_MM " (" A_YYYY "-" A_MM "-" A_DD ")   ")
 setTimer, fn_printAttempts, 1000
-fn_knappShuffle(inventory, order)
+fn_knappShuffle(inventory, order, settings.maxRolls)
 return
 
 
 fn_printAttempts()
 {
-	print(A_Hour ":" A_MM "  -  " attempts  " " sampleScrap "%")
+	print(A_Hour ":" A_MM "  -  " attempts  "     Scrap(" round(sampleScrap) "%)")
 }
 
 ; /--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\
@@ -158,7 +159,7 @@ fn_cutShuffle(param_cuts, param_maxWidth, param_rollnumbers:=1)
 			}
 		}
 	}
-	print(biga.sumBy(outputCuts))
+	; print(biga.sumBy(outputCuts))
 	return outputCuts
 }
 
