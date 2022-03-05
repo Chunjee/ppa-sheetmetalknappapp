@@ -46,10 +46,9 @@ order := [{width: 0.688, weight: 4000}
 		, {width: 5.063, weight: 500}]
 
 
-order := [{width: 1.500, weight: 400}
-		, {width: 2.563, weight: 900}
-		, {width: 1.438, weight: 600}
-		, {width: 1.900, weight: 400}]
+order := [{width: 1.938, weight: 2300}
+		, {width: 2.563, weight: 1400}
+		, {width: 3.500, weight: 1500}]
 
 ; /--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\
 ; MAIN
@@ -62,7 +61,7 @@ return
 
 fn_printAttempts()
 {
-	print(A_Hour ":" A_MM "  -  " attempts  "     Scrap(" round(sampleScrap) "%)")
+	print(A_Hour ":" A_MM "  -  " attempts  "     Scrap(" round(sampleScrap, 1) "%)")
 }
 
 ; /--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\
@@ -96,14 +95,16 @@ fn_knappShuffle(param_inventory, param_order, param_maxRolls := 5)
 			sampleScrap := biga.sumBy(combinedResult.totals, "scrapYield")
 			; check if set meets all order requirements
 			if (fn_checkIfOrderSatisfied(combinedResult, param_order) == true) {
-				orderSatisfiers.push({inventory: set, arrangement: bladeArrangement, result: combinedResult, scrapYield: biga.sumBy(combinedResult.totals, "scrapYield")})
-				if (settings.attemptMemory + 1 < orderSatisfiers.count()) {
-					orderSatisfiers := biga.sortBy(orderSatisfiers, "scrapYield")
-					orderSatisfiers.pop()
-				}
 				; check if under max allowable scrap percent
 				if (biga.sumBy(combinedResult.totals, "scrapYield") <= settings.maxScrapPercent) {
 					print("order and scrap satisfying solution found!")
+				}
+				; memorize this run
+				orderSatisfiers.push({inventory: set, arrangement: bladeArrangement, result: combinedResult, scrapYield: biga.sumBy(combinedResult.totals, "scrapYield")})
+				; don't remember too many runs
+				if (settings.attemptMemory + 1 <= orderSatisfiers.count()) {
+					orderSatisfiers := biga.sortBy(orderSatisfiers, "scrapYield")
+					orderSatisfiers.pop()
 				}
 			}
 		}
@@ -162,15 +163,13 @@ fn_cutShuffle(param_cuts, param_maxWidth, param_rollnumbers:=1)
 	minWidth := param_maxWidth - .07
 	loop, % param_rollnumbers {
 		totalWidth := 0
-		possibleCut := biga.sample(uniqCuts)
-		while ((biga.sumBy(outputCuts) + possibleCut) < param_maxWidth - settings.minCutTotal) {
-			outputCuts.push(possibleCut)
-			if (biga.sumBy(outputCuts) > param_maxWidth - settings.minMachineEfficiency) {
+		while (biga.sumBy(outputCuts) < param_maxWidth - 0.8) {
+			outputCuts.push(biga.sample(uniqCuts))
+			if (biga.sumBy(outputCuts) > param_maxWidth - 0.5) {
 				outputCuts := []
 			}
 		}
 	}
-	; print(biga.sumBy(outputCuts))
 	return outputCuts
 }
 
