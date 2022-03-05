@@ -12,7 +12,9 @@ A := new biga() ; requires https://www.npmjs.com/package/biga.ahk
 global attempts, sampleScrap
 global settings := {}
 settings.maxScrapPercent := 8
-settings.maxRolls := 2
+settings.maxRolls := 4
+settings.maxAttempts := 4000
+settings.attemptMemory := 100
 settings.minMachineEfficiency := .05
 settings.minCutTotal := .09
 
@@ -44,10 +46,10 @@ order := [{width: 0.688, weight: 4000}
 		, {width: 5.063, weight: 500}]
 
 
-order := [{width: 1.500, weight: 1300}
-		, {width: 0.563, weight: 1400}
-		, {width: 1.438, weight: 500}
-		, {width: 1.900, weight: 1500}]
+order := [{width: 1.500, weight: 400}
+		, {width: 2.563, weight: 900}
+		, {width: 1.438, weight: 600}
+		, {width: 1.900, weight: 400}]
 
 ; /--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\
 ; MAIN
@@ -69,8 +71,11 @@ fn_printAttempts()
 ; try finding a combination that creates no scrap by pulling randomly
 fn_knappShuffle(param_inventory, param_order, param_maxRolls := 5)
 {
+	orderSatisfiers := []
 	allSets := []
-	while (workingSetFound != true) {
+	; keep trying many times or forever if user set max to zero
+	while (attempts < settings.maxAttempts || settings.maxAttempts == 0) {
+		; try different roll ammounts
 		loop, % param_maxRolls {
 			attempts++
 			; create random set of inventory
@@ -89,27 +94,33 @@ fn_knappShuffle(param_inventory, param_order, param_maxRolls := 5)
 			combinedResult := biga.cloneDeep(result)
 			combinedResult.outputs := fn_combinesimiliarWidths(result.outputs)
 			sampleScrap := biga.sumBy(combinedResult.totals, "scrapYield")
-			; check if under max allowable scrap percent
-			if (biga.sumBy(combinedResult.totals, "scrapYield") <= settings.maxScrapPercent) {
-				; check if set meets all order requirements
-				if (fn_checkIfOrderSatisfied(combinedResult, param_order, 5) == true) {
-					; print solution to console
-					print("FINAL:`n`n")
-					print(combinedResult)
-					print(biga.sortBy(bladeArrangement))
-					print(set)
-					print(biga.sumBy(combinedResult.totals, "scrapYield"))
-					; turn timer off
-					setTimer, fn_printAttempts, Off
-					break 2
+			; check if set meets all order requirements
+			if (fn_checkIfOrderSatisfied(combinedResult, param_order) == true) {
+				orderSatisfiers.push({inventory: set, arrangement: bladeArrangement, result: combinedResult, scrapYield: biga.sumBy(combinedResult.totals, "scrapYield")})
+				if (settings.attemptMemory + 1 < orderSatisfiers.count()) {
+					orderSatisfiers := biga.sortBy(orderSatisfiers, "scrapYield")
+					orderSatisfiers.pop()
+				}
+				; check if under max allowable scrap percent
+				if (biga.sumBy(combinedResult.totals, "scrapYield") <= settings.maxScrapPercent) {
+					print("order and scrap satisfying solution found!")
 				}
 			}
 		}
 	}
+	if (orderSatisfiers.count() < 1) {
+		print("No solution found")
+	} else {
+		print("Solutions found: " orderSatisfiers.count())
+		orderSatisfiers := biga.sortBy(orderSatisfiers, "scrapYield")
+		print(orderSatisfiers[1])
+	}
+	; turn timer off
+	setTimer, fn_printAttempts, Off
 }
 return
 
-fn_checkIfOrderSatisfied(param_yields, param_order, param_maxScrap)
+fn_checkIfOrderSatisfied(param_yields, param_order)
 {
 	for key, value in param_order {
 		findable := biga.find(param_yields.outputs, {width: value.width})
