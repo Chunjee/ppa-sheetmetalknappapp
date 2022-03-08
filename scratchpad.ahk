@@ -9,11 +9,11 @@ SetBatchLines, -1
 A := new biga() ; requires https://www.npmjs.com/package/biga.ahk
 
 ; global variables
-global attempts, sampleScrap
+global attempts, sampleProgress
 global settings := {}
 settings.maxScrapPercent := 8
 settings.maxRolls := 4
-settings.maxAttempts := 4000
+settings.maxAttempts := 400
 settings.attemptMemory := 100
 settings.minMachineEfficiency := .05
 settings.minCutTotal := .09
@@ -61,7 +61,7 @@ return
 
 fn_printAttempts()
 {
-	print(A_Hour ":" A_MM "  -  " attempts  "     Scrap(" round(sampleScrap, 1) "%)")
+	print(A_Hour ":" A_MM "  -  " attempts  "     found solutions(" sampleProgress ")")
 }
 
 ; /--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\--/--\
@@ -71,6 +71,7 @@ fn_printAttempts()
 fn_knappShuffle(param_inventory, param_order, param_maxRolls := 5)
 {
 	orderSatisfiers := []
+	orderSatisfiers.bests := []
 	allSets := []
 	; keep trying many times or forever if user set max to zero
 	while (attempts < settings.maxAttempts || settings.maxAttempts == 0) {
@@ -92,19 +93,21 @@ fn_knappShuffle(param_inventory, param_order, param_maxRolls := 5)
 			; print(result)
 			combinedResult := biga.cloneDeep(result)
 			combinedResult.outputs := fn_combinesimiliarWidths(result.outputs)
-			sampleScrap := biga.sumBy(combinedResult.totals, "scrapYield")
+			sampleProgress := orderSatisfiers.count()
 			; check if set meets all order requirements
 			if (fn_checkIfOrderSatisfied(combinedResult, param_order) == true) {
 				; check if under max allowable scrap percent
 				if (biga.sumBy(combinedResult.totals, "scrapYield") <= settings.maxScrapPercent) {
-					print("order and scrap satisfying solution found!")
+					; print("order and scrap satisfying solution found!")
 				}
 				; memorize this run
-				orderSatisfiers.push({inventory: set, arrangement: bladeArrangement, result: combinedResult, scrapYield: biga.sumBy(combinedResult.totals, "scrapYield")})
+				orderSatisfiers.push({usedRolls: set.count(), inventory: set, arrangement: bladeArrangement, result: combinedResult, scrapYield: biga.sumBy(combinedResult.totals, "scrapYield")})
 				; don't remember too many runs
 				if (settings.attemptMemory + 1 <= orderSatisfiers.count()) {
 					orderSatisfiers := biga.sortBy(orderSatisfiers, "scrapYield")
-					orderSatisfiers.pop()
+					if (settings.attemptMemory != 0) {
+						orderSatisfiers.pop()
+					}
 				}
 			}
 		}
@@ -114,6 +117,7 @@ fn_knappShuffle(param_inventory, param_order, param_maxRolls := 5)
 	} else {
 		print("Solutions found: " orderSatisfiers.count())
 		orderSatisfiers := biga.sortBy(orderSatisfiers, "scrapYield")
+		orderSatisfiers := biga.sortBy(orderSatisfiers, "usedRolls")
 		print(orderSatisfiers[1])
 	}
 	; turn timer off
